@@ -2,7 +2,7 @@
 
 Interactive Streamlit dashboard exploring how credit score, loan term and loan purpose affect interest rates.
 
-**Live app:** https://YOUR-APP-NAME.streamlit.app
+**Live app:** https://loan-term-interest-visual.streamlit.app](https://loan-term-interest-visual.streamlit.app
 
 ## Run locally
 ```
