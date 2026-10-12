@@ -2,12 +2,10 @@
 
 Interactive Streamlit dashboard exploring how credit score, loan term and loan purpose affect interest rates.
 
-**Live app:** https://loan-term-interest-visual.streamlit.app](https://loan-term-interest-visual.streamlit.app
+**Live app:** [View Streamlit App](https://loan-term-interest-visual.streamlit.app)
 
 ## Run locally
-```
+
+```bash
 pip install -r requirements.txt
 streamlit run app.py
-```
-
-Data: Loan Predictions 2025, Kaggle (`loan_dataset.csv`).
