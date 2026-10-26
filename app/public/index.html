@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Explorer Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f4f7f6; color: #333; }
+        header { background: #1e293b; color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.5rem; }
+        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .kpi-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        .kpi-card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #64748b; }
+        .kpi-card p { margin: 0; font-size: 1.5rem; font-weight: bold; color: #0f172a; }
+        .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .panel h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        th { background: #f8fafc; color: #475569; }
+        .filter-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; color: #475569; }
+        select, input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Loan Explorer Dashboard</h1>
+        <p id="env-label" style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.8;"></p>
+    </header>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <h3>Total Borrowers</h3>
+            <p id="kpi-borrowers">-</p>
+        </div>
+        <div class="kpi-card">
+            <h3>Avg Interest Rate</h3>
+            <p id="kpi-rate">-</p>
+        </div>
+        <div class="kpi-card">
+            <h3>Avg Loan Amount</h3>
+            <p id="kpi-amount">-</p>
+        </div>
+        <div class="kpi-card">
+            <h3>Paid Back Rate</h3>
+            <p id="kpi-paid">-</p>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <div class="panel">
+            <h2>Filters</h2>
+            <div class="filter-group">
+                <label for="filter-term">Loan Term</label>
+                <select id="filter-term" multiple style="height: 80px;"></select>
+                <small style="color: #64748b;">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+            <div class="filter-group">
+                <label for="filter-purpose">Loan Purpose</label>
+                <select id="filter-purpose" multiple style="height: 100px;"></select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-employment">Employment Status</label>
+                <select id="filter-employment" multiple style="height: 80px;"></select>
+            </div>
+            <button id="apply-filters" style="width: 100%; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">Apply Filters</button>
+        </div>
+
+        <div class="panel">
+            <h2>Interest Rates by Purpose</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Loan Purpose</th>
+                        <th>Mean Interest Rate</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody id="purpose-table-body">
+                    <tr><td colspan="3" style="text-align: center;">Loading data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let allOptions = {};
+
+        async function init() {
+            const optRes = await fetch('/api/options');
+            allOptions = await optRes.json();
+            
+            document.getElementById('env-label').innerText = `Environment: ${allOptions.environment}`;
+
+            populateSelect('filter-term', allOptions.terms, allOptions.terms);
+            populateSelect('filter-purpose', allOptions.purposes, allOptions.purposes);
+            populateSelect('filter-employment', allOptions.employment, allOptions.employment);
+
+            document.getElementById('apply-filters').addEventListener('click', loadSummary);
+            loadSummary();
+        }
+
+        function populateSelect(elementId, items, selectedItems) {
+            const select = document.getElementById(elementId);
+            select.innerHTML = '';
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.innerText = item;
+                opt.selected = selectedItems.includes(item);
+                select.appendChild(opt);
+            });
+        }
+
+        function getSelectedValues(elementId) {
+            const select = document.getElementById(elementId);
+            return Array.from(select.selectedOptions).map(opt => opt.value);
+        }
+
+        async function loadSummary() {
+            const filters = {
+                terms: getSelectedValues('filter-term'),
+                purposes: getSelectedValues('filter-purpose'),
+                employment: getSelectedValues('filter-employment'),
+                scoreMin: allOptions.scoreMin,
+                scoreMax: allOptions.scoreMax
+            };
+
+            const res = await fetch(`/api/summary?f=${encodeURIComponent(JSON.stringify(filters))}`);
+            const data = await res.json();
+
+            if (data.empty) {
+                alert("No data matches the selected filters.");
+                return;
+            }
+
+            document.getElementById('kpi-borrowers').innerText = data.kpis.borrowers.toLocaleString();
+            document.getElementById('kpi-rate').innerText = data.kpis.avgRate.toFixed(2) + '%';
+            document.getElementById('kpi-amount').innerText = '$' + data.kpis.avgAmount.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('kpi-paid').innerText = data.kpis.paidBack.toFixed(1) + '%';
+
+            const tbody = document.getElementById('purpose-table-body');
+            tbody.innerHTML = '';
+            data.purpose.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.name}</td><td>${row.mean.toFixed(2)}%</td><td>${row.count.toLocaleString()}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
