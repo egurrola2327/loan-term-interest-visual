@@ -134,9 +134,9 @@ function summarize(f) {
   let rateSum = 0;
   let amountSum = 0;
   let paidSum = 0;
-  const byBinTerm = new Map(); 
-  const byBin = new Map(); 
-  const byPurpose = new Map(); 
+  const byBinTerm = new Map(); // "bin|term" -> {sum, count}
+  const byBin = new Map(); // bin -> {sum, count}
+  const byPurpose = new Map(); // purpose -> {sum, count}
   const termsSeen = new Set();
 
   const add = (map, key, value) => {
@@ -234,7 +234,7 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/api/options") {
       return sendJson(res, 200, options);
     }
-    if (url.pathname ===/api\/summary/) {
+    if (url.pathname === "/api/summary") {
       const filters = JSON.parse(url.searchParams.get("f") || "{}");
       return sendJson(res, 200, summarize(filters));
     }

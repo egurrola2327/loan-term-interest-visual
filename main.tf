@@ -83,11 +83,11 @@ resource "azurerm_linux_web_app" "app" {
     always_on = var.app_service_sku != "F1"
 
     application_stack {
-      python_version = "3.11"
+      node_version = "24-lts"
     }
 
-    # Lightweight server placeholder so it doesn't crash on boot
-    app_command_line = "python3 -m http.server 8000"
+    # Start the Loan Explorer Node server
+    app_command_line = "node server.js"
   }
 
   app_settings = {
